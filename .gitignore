@@ -1,0 +1,22 @@
+# Allow-list: only code, docs and the sample config can ever be committed.
+/*
+!/.gitignore
+!/.github/
+!/.claude-plugin/
+!/bin/
+!/kb/
+!/skills/
+!/templates/
+!/tests/
+!/sample/
+!/README.md
+!/CLAUDE.md
+!/SECURITY.md
+!/LICENSE
+/sample/*
+!/sample/household.toml
+!/sample/make.py
+__pycache__/
+*.pyc
+.privacy-terms
+.DS_Store

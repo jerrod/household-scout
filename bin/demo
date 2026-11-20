@@ -1,0 +1,7 @@
+#!/bin/zsh
+# Builds the Maple Lane sample household in this checkout so bin/kb has data to answer from.
+set -eu
+cd "$(dirname "$0")/.."
+python3 -I sample/make.py
+HOUSEHOLD_CONFIG=sample/household.toml bin/kb build
+bin/kb week --days 7

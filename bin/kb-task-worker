@@ -1,0 +1,43 @@
+#!/bin/zsh
+# Runs one headless review task from kb/instructions/<task>.md, then checks, commits and pushes.
+set -u
+cd "$(dirname "$0")/.."
+bin/kb-guard || exit 1
+task=$1
+query=${2:-}
+log() { echo "$(date -Iseconds) $*" | tee -a /tmp/kb-task-$task.log; }
+until mkdir /tmp/kb-worker.lock 2>/dev/null; do
+  owner=$(cat /tmp/kb-worker.lock/pid 2>/dev/null)
+  [ -n "$owner" ] && ! kill -0 $owner 2>/dev/null && rm -rf /tmp/kb-worker.lock && continue
+  sleep 60
+done
+echo $$ > /tmp/kb-worker.lock/pid
+trap 'rm -rf /tmp/kb-worker.lock 2>/dev/null' EXIT
+git pull -q --rebase --autostash origin "${KB_BRANCH:-main}" || { log "pull failed"; exit 1; }
+bin/kb build > /dev/null 2>&1
+if [ -n "$query" ]; then
+  python3 -I kb/task_prep.py $task "$query" >> /tmp/kb-task-$task.log 2>&1 || { log "prep failed"; exit 1; }
+  grep -q '"saved": "' inbox/task-$task/facts.jsonl || { log "no mail could be saved: run this from launchd, which can read Mail"; exit 1; }
+fi
+mkdir -p inbox/task-$task; rm -f inbox/task-$task/REVIEWED.md
+log "reviewing"
+claude -p "Follow kb/instructions/$task.md. Prepared mail, if any, is in inbox/task-$task/. Run one simple command per Bash call from the repository root, and read files with the Read tool. Write the report to inbox/task-$task/REVIEWED.md last." \
+  --model sonnet --permission-mode acceptEdits \
+  --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(bin/kb *)" "Bash(cd *)" "Bash(echo *)" "Bash(awk *)" "Bash(tr *)" "Bash(sed *)" "Bash(find *)" "Bash(xargs *)" "Bash(for *)" "Bash(printf *)" "Bash(head *)" "Bash(tail *)" "Bash(grep *)" "Bash(wc *)" "Bash(sort *)" "Bash(uniq *)" "Bash(cut *)" "Bash(cat *)" "Bash(file *)" "Bash(bin/test)" "Bash(bin/test *)" "Bash(git status *)" "Bash(git diff *)" "Bash(pdftotext *)" "Bash(python3 *)" "Bash(mv *)" "Bash(cp *)" "Bash(mkdir *)" "Bash(ls *)" "Bash(sips *)" "Bash(textutil *)" \
+  < /dev/null > /tmp/kb-task-$task-review.txt 2>&1
+[ -f inbox/task-$task/REVIEWED.md ] || { log "review incomplete: see /tmp/kb-task-$task-review.txt"; git checkout -q -- .; git clean -qfd -- documents vault facts; exit 1; }
+bin/kb check > /tmp/kb-task-$task-check.txt 2>&1 || { log "check failed: see /tmp/kb-task-$task-check.txt"; exit 1; }
+bin/test > /tmp/kb-task-$task-test.txt 2>&1 || { log "tests failed"; exit 1; }
+git add -A -- . ':!secrets'
+python3 -I kb/secret_scan.py >> /tmp/kb-secret-scan.log 2>&1 && git add -A -- . ':!secrets'
+git commit -q -F - <<MSG || log "nothing to commit"
+Run the $task review
+
+$(cat inbox/task-$task/REVIEWED.md)
+MSG
+for attempt in 1 2 3; do
+  git pull -q --rebase origin "${KB_BRANCH:-main}" && git push -q origin "${KB_BRANCH:-main}" && { log "pushed $(git rev-parse --short HEAD)"; exit 0; }
+  sleep 20
+done
+log "push failed after 3 tries"
+exit 1

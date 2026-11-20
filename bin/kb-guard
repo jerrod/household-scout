@@ -1,0 +1,11 @@
+#!/bin/zsh
+# Refuses to let a worker push household data to a repository that is not private.
+set -eu
+cd "$(dirname "$0")/.."
+remote=$(git remote get-url origin 2>/dev/null) || { echo "no origin remote"; exit 1; }
+case $remote in
+  *github.com*)
+    visibility=$(gh repo view "$remote" --json visibility -q .visibility) || { echo "cannot read the repository's visibility"; exit 1; }
+    [ "$visibility" = "PRIVATE" ] || { echo "origin is $visibility; household data only goes to a private repository"; exit 1; } ;;
+  *) [ -n "${KB_TRUST_REMOTE:-}" ] || { echo "origin is not on GitHub; set KB_TRUST_REMOTE=1 after you confirm it is private"; exit 1; } ;;
+esac

@@ -1,0 +1,30 @@
+#!/bin/zsh
+# Runs under launchd. When the server's review queue holds items, a headless Claude Code session reviews them,
+# then this script checks, commits and pushes, because a headless session cannot pass the commit hooks.
+set -u
+cd "$(dirname "$0")/.."
+bin/kb-guard || exit 1
+lock=/tmp/kb-worker.lock
+mkdir "$lock" 2>/dev/null || { [ -n "$(find "$lock" -mmin +90 2>/dev/null)" ] && rm -rf "$lock" && mkdir "$lock"; } || exit 0
+trap 'rmdir "$lock" 2>/dev/null' EXIT
+token=$(cat ~/.config/household-scout/extractor-token)
+server=${KB_SERVER:?set KB_SERVER to your intake server}
+count=$(curl -sf -H "Authorization: Bearer $token" "$server/api/v1/intake/pending" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))') || { echo "$(date -Iseconds) queue unreachable"; exit 0; }
+[ "$count" -eq 0 ] && exit 0
+echo "$(date -Iseconds) $count waiting items"
+before=$(shasum "$0")
+git pull -q --rebase --autostash origin "${KB_BRANCH:-main}" || { echo "$(date -Iseconds) pull failed"; exit 1; }
+[ "$(shasum "$0")" = "$before" ] || [ -n "${KB_WORKER_RESTARTED:-}" ] || KB_WORKER_RESTARTED=1 exec "$0"
+claude -p "Run one simple command per Bash call from the repository root. Review the intake queue with the kb-update skill, steps 2, 3 and 7 only. Skip mail, text and calendar collection. Run bin/kb check and bin/test after your edits and fix every error. Resolve each item only after its edits pass bin/kb check. Do not commit or push; the worker does that." \
+  --model sonnet \
+  --permission-mode acceptEdits \
+  --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(bin/kb *)" "Bash(cd *)" "Bash(echo *)" "Bash(awk *)" "Bash(tr *)" "Bash(md5 *)" "Bash(shasum *)" "Bash(sed *)" "Bash(find *)" "Bash(xargs *)" "Bash(for *)" "Bash(printf *)" "Bash(head *)" "Bash(tail *)" "Bash(grep *)" "Bash(wc *)" "Bash(sort *)" "Bash(uniq *)" "Bash(cut *)" "Bash(cat *)" "Bash(file *)" "Bash(bin/test)" "Bash(bin/test *)" "Bash(git status *)" "Bash(git diff *)" "Bash(pdftotext *)" "Bash(python3 *)" \
+  < /dev/null
+changed=$(git status --porcelain -- . ':!secrets' | wc -l | tr -d ' ')
+[ "$changed" -eq 0 ] && { echo "$(date -Iseconds) no changes"; exit 0; }
+bin/kb check > /tmp/kb-intake-check.txt 2>&1 || { echo "$(date -Iseconds) check failed, nothing committed: see /tmp/kb-intake-check.txt"; exit 1; }
+bin/test > /tmp/kb-intake-test.txt 2>&1 || { echo "$(date -Iseconds) tests failed, nothing committed: see /tmp/kb-intake-test.txt"; exit 1; }
+git add -A -- . ':!secrets'
+python3 -I kb/secret_scan.py >> /tmp/kb-secret-scan.log 2>&1 && git add -A -- . ':!secrets'
+git commit -q -m "Apply reviewed items from the intake queue" || exit 1
+git push -q origin "${KB_BRANCH:-main}" && echo "$(date -Iseconds) pushed $(git rev-parse --short HEAD)"

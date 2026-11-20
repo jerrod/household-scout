@@ -1,0 +1,5 @@
+{
+  "name": "household-scout",
+  "description": "Set up and run a sourced household knowledgebase with Claude",
+  "version": "0.1.0"
+}

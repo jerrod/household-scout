@@ -1,0 +1,23 @@
+#!/bin/zsh
+# Rechecks facts that Jev flags, person disagreements first, 150 rows per task run; reruns resume.
+set -u
+cd "$(dirname "$0")/.."
+bin/kb-guard || exit 1
+mkdir -p inbox/audit-chunks/done
+if ! ls inbox/audit-chunks/*.jsonl > /dev/null 2>&1 && [ -z "$(ls inbox/audit-chunks/done)" ]; then
+  bin/kb build > /dev/null 2>&1
+  bin/kb --json audit > inbox/audit-all.json || exit 1
+  python3 -I -c "
+import json
+rows = sorted(json.load(open('inbox/audit-all.json')), key=lambda r: (r['field'] != 'person', -r['confidence']))
+for n in range(0, len(rows), 150):
+    with open(f'inbox/audit-chunks/{n // 150 + 1:04d}.jsonl', 'w') as out:
+        out.writelines(json.dumps(r) + '\n' for r in rows[n:n + 150])
+"
+fi
+for chunk in $(ls inbox/audit-chunks/*.jsonl 2>/dev/null | sort); do
+  mkdir -p inbox/task-audit
+  cp $chunk inbox/task-audit/flags.jsonl
+  bin/kb-task-worker audit || exit 1
+  mv $chunk inbox/audit-chunks/done/
+done

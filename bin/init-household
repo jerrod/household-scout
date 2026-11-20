@@ -1,0 +1,24 @@
+#!/bin/zsh
+# Starts a new household knowledgebase in the folder you name, as its own private git repository.
+set -eu
+[ $# -eq 1 ] || { echo "usage: bin/init-household <folder>"; exit 1; }
+here=$(cd "$(dirname "$0")/.." && pwd)
+target=$1
+[ ! -e "$target" ] || { echo "$target already exists"; exit 1; }
+mkdir -p "$target"
+cp -R "$here/bin" "$here/kb" "$here/tests" "$here/templates" "$here/CLAUDE.md" "$target/"
+rm -f "$target/bin/init-household" "$target/tests/test_privacy.py"
+cp "$here/sample/household.toml" "$target/household.toml"
+cp "$here/templates/household.gitignore" "$target/.gitignore"
+cd "$target"
+mkdir -p facts people property appliances vehicles vendors work devices policies organizations expenses documents/archive vault secrets unread
+printf 'id,date,time,person,domain,kind,entity,summary,value,amount,due,contact,link,source\n' > "facts/$(date +%Y).csv"
+printf 'id,name,kind,record\n' > organizations/organizations.csv
+printf 'name,org,unit\n' > organizations/names.csv
+printf 'id,date,vendor,category,kind,amount,summary,mail_id\n' > expenses/ledger.csv
+printf 'path,title,summary,household\n' > documents/summaries.csv
+printf 'path,source\n' > documents/sources.csv
+printf 'fact,path\n' > documents/fact-links.csv
+printf 'date,kind,sender,subject,source\n' > unread/invites-and-tickets.csv
+git init -q -b main
+echo "Next: edit household.toml, set up git-crypt for vault/ and secrets/, then add a private origin remote."

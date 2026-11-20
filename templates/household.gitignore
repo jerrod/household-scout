@@ -1,0 +1,6 @@
+inbox/
+.kb/
+.kb-state.*.json
+__pycache__/
+*.pyc
+.DS_Store

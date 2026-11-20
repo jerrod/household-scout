@@ -1,0 +1,46 @@
+#!/bin/zsh
+# Runs hourly under launchd. Collects new mail, texts, calendar events and Documents files,
+# has a headless Claude Code session read them into the knowledgebase, then checks, commits and pushes.
+set -u
+cd "$(dirname "$0")/.."
+bin/kb-guard || exit 1
+lock=/tmp/kb-worker.lock
+owner=$(cat "$lock/pid" 2>/dev/null)
+[ -n "$owner" ] && ! kill -0 $owner 2>/dev/null && rm -rf "$lock"
+mkdir "$lock" 2>/dev/null || { [ -n "$(find "$lock" -mmin +90 2>/dev/null)" ] && rm -rf "$lock" && mkdir "$lock"; } || exit 0
+echo $$ > "$lock/pid"
+trap 'rm -rf "$lock"' EXIT
+log() { echo "$(date -Iseconds) $*"; }
+day=$(date +%F)
+host=$(hostname -s)
+pgrep -x Mail > /dev/null || { open -ga Mail; sleep 120; }
+before=$(shasum "$0")
+git pull -q --rebase --autostash origin "${KB_BRANCH:-main}" || { log "pull failed"; exit 1; }
+[ "$(shasum "$0")" = "$before" ] || [ -n "${KB_WORKER_RESTARTED:-}" ] || KB_WORKER_RESTARTED=1 exec "$0"
+python3 -I kb/ingest.py > /tmp/kb-collect-ingest.txt 2>&1 || { log "collection failed: see /tmp/kb-collect-ingest.txt"; exit 1; }
+new=$(cat inbox/$day/{mail,texts,calendar,documents,canvas,campus,slack}.jsonl 2>/dev/null | wc -l | tr -d ' ')
+if [ "$new" -eq 0 ]; then
+  cp inbox/$day/next-state.json .kb-state.$host.json
+  [ -n "$(git status --porcelain -- .kb-state.$host.json)" ] && git add .kb-state.$host.json && git commit -q -m "Advance the collector position" && git push -q origin "${KB_BRANCH:-main}"
+  bin/kb build > /dev/null 2>&1; python3 -I kb/agent_calendar.py --digest > /tmp/kb-agent-calendar.txt 2>&1 || log "agent calendar failed: see /tmp/kb-agent-calendar.txt"
+  exit 0
+fi
+log "$new new items"
+claude -p "Follow kb/instructions/collector.md for inbox/$day/. Read every row. Run one simple command per Bash call from the repository root, and read files with the Read tool." \
+  --model sonnet \
+  --permission-mode acceptEdits \
+  --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(bin/kb *)" "Bash(cd *)" "Bash(echo *)" "Bash(awk *)" "Bash(tr *)" "Bash(md5 *)" "Bash(shasum *)" "Bash(sed *)" "Bash(find *)" "Bash(xargs *)" "Bash(for *)" "Bash(printf *)" "Bash(head *)" "Bash(tail *)" "Bash(grep *)" "Bash(wc *)" "Bash(sort *)" "Bash(uniq *)" "Bash(cut *)" "Bash(cat *)" "Bash(file *)" "Bash(bin/test)" "Bash(bin/test *)" "Bash(git status *)" "Bash(git diff *)" "Bash(pdftotext *)" "Bash(python3 *)" "Bash(mv *)" "Bash(cp *)" "Bash(mkdir *)" "Bash(ls *)" \
+  < /dev/null > /tmp/kb-collect-review.txt 2>&1
+[ -f inbox/$day/REVIEWED.md ] || { log "review incomplete, nothing committed: see /tmp/kb-collect-review.txt"; git checkout -q -- . ; git clean -qfd -- documents vault facts; exit 1; }
+bin/kb check > /tmp/kb-collect-check.txt 2>&1 || { log "check failed, nothing committed: see /tmp/kb-collect-check.txt"; exit 1; }
+bin/test > /tmp/kb-collect-test.txt 2>&1 || { log "tests failed, nothing committed: see /tmp/kb-collect-test.txt"; exit 1; }
+cp inbox/$day/next-state.json .kb-state.$host.json
+git add -A -- . ':!secrets'
+python3 -I kb/secret_scan.py >> /tmp/kb-secret-scan.log 2>&1 && git add -A -- . ':!secrets'
+git commit -q -F - <<MSG || { log "nothing to commit"; exit 0; }
+Read mail, texts, calendar and files collected on $day
+
+$(cat inbox/$day/REVIEWED.md)
+MSG
+git push -q origin "${KB_BRANCH:-main}" && log "pushed $(git rev-parse --short HEAD)"
+bin/kb build > /dev/null 2>&1; python3 -I kb/agent_calendar.py --digest > /tmp/kb-agent-calendar.txt 2>&1 || log "agent calendar failed: see /tmp/kb-agent-calendar.txt"

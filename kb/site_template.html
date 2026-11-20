@@ -1,0 +1,312 @@
+<title>/*NAME*/ Household</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+:root{--bg:#f5f6f5;--surface:#fff;--fg:#16201f;--muted:#5b6a68;--line:#dce2e0;--accent:#0f6b63;--accent-fg:#fff;--chip:#e8eeec;--mark:#ffe58a;--warn:#9a5b00;--font:'Inter',system-ui,sans-serif;--display:'Space Grotesk','Inter',system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1413;--surface:#162120;--fg:#e7eeec;--muted:#93a5a2;--line:#273533;--accent:#4cc3b6;--accent-fg:#06201d;--chip:#213030;--mark:#6b5a12;--warn:#e0a458;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1413;--surface:#162120;--fg:#e7eeec;--muted:#93a5a2;--line:#273533;--accent:#4cc3b6;--accent-fg:#06201d;--chip:#213030;--mark:#6b5a12;--warn:#e0a458;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 var(--font);padding-block:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1180px;margin:0 auto}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 8px;border-bottom:1px solid var(--line)}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+h1{font:600 18px var(--display);margin:0;white-space:nowrap;cursor:pointer}
+h2{font:600 20px var(--display);margin:0 0 8px;text-wrap:balance}
+h3{font:600 11px var(--font);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:22px 0 8px}
+input,select,button{font:inherit;color:var(--fg)}
+input,select{font-size:16px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
+#q{flex:1;min-width:180px}
+nav{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+.btn{font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer}
+.btn[aria-pressed="true"],.btn[aria-current="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+main{padding-block:16px 64px;min-width:0}
+.muted{color:var(--muted)}
+.unk{color:var(--muted);font-style:italic}
+a{color:var(--accent);cursor:pointer;text-decoration:none}
+a:hover{text-decoration:underline}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;text-align:left}
+.tile b{display:block;font:600 20px var(--display);font-variant-numeric:tabular-nums}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;min-width:0}
+.card+.card{margin-top:12px}
+.fact{padding:9px 0;border-bottom:1px solid var(--line);min-width:0}
+.fact .meta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fact .meta b{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
+.fact p{margin:2px 0;overflow-wrap:anywhere}
+.tag{font-size:11px;padding:1px 8px;border-radius:999px;background:var(--chip)}
+.money{font-variant-numeric:tabular-nums;font-weight:600}
+.filters{display:grid;gap:8px;margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cols{display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px}
+.list a{display:block;padding:6px 8px;border-radius:6px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list a:hover{background:var(--chip);text-decoration:none}
+.list small{color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+th{font:600 11px var(--font);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kv td:first-child{color:var(--muted);width:32%}
+.scroll{overflow-x:auto;max-width:100%}
+.md p{margin:6px 0;max-width:75ch}
+.md ul{margin:6px 0;padding-left:20px;max-width:80ch}
+.md li{margin:3px 0;overflow-wrap:anywhere}
+.md h4{font:600 14px var(--display);margin:16px 0 4px}
+code{font-size:12px;background:var(--chip);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+mark{background:var(--mark);color:inherit;border-radius:2px}
+@media (max-width:800px){.cols{grid-template-columns:minmax(0,1fr)}}
+</style>
+<div class="wrap">
+<header>
+  <div class="top"><h1 data-go="home">/*NAME*/ Household</h1><input id="q" type="search" placeholder="Search facts, records, documents and notes" aria-label="Search everything"></div>
+  <nav id="nav"></nav>
+</header>
+<main id="view"></main>
+</div>
+<script>
+const D = /*DATA*/null;
+const F = D.facts.map(r => ({id: r[0], date: r[1], time: r[2], entity: r[3], summary: r[4], value: r[5], amount: r[6], contact: r[7], link: r[8], source: r[9], person: D.person[r[10]], domain: D.domain[r[11]], kind: D.kind[r[12]], org: r[13]}));
+const O = D.orgs.map((r, i) => ({i, id: r[0], name: r[1], kind: r[2], record: r[3], n: r[4]}));
+const OID = Object.fromEntries(O.map(o => [o.id, o]));
+F.forEach(f => { f.text = [f.summary, f.entity, f.value, f.contact, f.kind, f.person, f.id, f.source].join(' ').toLowerCase(); });
+const R = Object.fromEntries(D.records.map(r => [r.p, r]));
+const FOLDERS = [...new Set(D.records.map(r => r.f))];
+const FAMILY = /*FAMILY*/[];
+const VIEWS = [['home', 'Home'], ['facts', 'Facts'], ['records', 'Records'], ['orgs', 'Organizations'], ['money', 'Money'], ['notes', 'Notes']];
+const blank = () => ({person: '', domain: '', kind: '', org: -1, from: '', to: '', text: '', oldest: false, shown: 100});
+const st = {view: 'home', q: '', filter: blank(), folder: 'vendors', record: '', note: '', listText: '', year: '', org: -1, orgKind: '', orgText: ''};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const usd = n => '$' + Number(n).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const terms = s => s.toLowerCase().split(/\s+/).filter(Boolean);
+const hit = (text, words) => words.every(w => text.includes(w));
+
+function mark(text, words) {
+  let out = esc(text);
+  words.forEach(w => { out = out.replace(new RegExp('(' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi'), '<mark>$1</mark>'); });
+  return out;
+}
+
+function inline(text) {
+  return esc(text).replace(/`([^`]+)`/g, (m, code) => {
+    const path = code.replace(/\.md$/, '');
+    return R[path] ? `<a data-record="${esc(path)}">${esc(R[path].n)}</a>` : `<code>${code}</code>`;
+  }).replace(/\b((?:property|appliances|vehicles|vendors|work|devices|people|policies)\/[a-z0-9][a-z0-9-]*)\b/g, (m, path) => R[path] ? `<a data-record="${path}">${esc(R[path].n)}</a>` : m);
+}
+
+function markdown(text) {
+  const out = [];
+  let list = false, table = false;
+  const close = () => { if (list) out.push('</ul>'); if (table) out.push('</table></div>'); list = table = false; };
+  text.split('\n').forEach(line => {
+    if (line.startsWith('|')) {
+      if (/^\|\s*-/.test(line)) return;
+      const cells = line.replace(/^\||\|$/g, '').split('|').map(c => inline(c.trim()));
+      if (!table) { close(); out.push('<div class="scroll"><table><tr>' + cells.map(c => `<th>${c}</th>`).join('') + '</tr>'); table = true; return; }
+      out.push('<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>');
+    } else if (/^\s*- /.test(line)) {
+      if (!list) { close(); out.push('<ul>'); list = true; }
+      out.push(`<li>${inline(line.replace(/^\s*- /, ''))}</li>`);
+    } else if (/^#+ /.test(line)) { close(); out.push(`<h4>${inline(line.replace(/^#+ /, ''))}</h4>`); }
+    else if (line.trim() && line.trim() !== '---') { close(); out.push(`<p>${inline(line)}</p>`); }
+  });
+  close();
+  return `<div class="md">${out.join('')}</div>`;
+}
+
+function factHtml(f, words = []) {
+  const link = f.link && R[f.link] ? `<a data-record="${esc(f.link)}">${esc(R[f.link].n)}</a>` : '';
+  const entity = f.entity && (f.org >= 0 ? `<a data-org="${f.org}">${mark(f.entity, words)}</a>` : mark(f.entity, words));
+  const bits = [entity, f.value && f.amount == null && mark(f.value, words), f.amount != null && `<span class="money">${usd(f.amount)}</span>`, f.contact && f.contact !== f.entity && esc(f.contact), link].filter(Boolean);
+  return `<div class="fact"><div class="meta"><b>${f.date}${f.time ? ' ' + f.time : ''}</b><span>${esc(f.person || 'no person')}</span><span class="tag">${esc(f.domain)} / ${esc(f.kind)}</span><span>${esc(f.id)}</span><span>${esc(f.source || 'no source')}</span></div><p>${mark(f.summary, words)}</p>${bits.length ? `<div class="meta">${bits.join(' · ')}</div>` : ''}</div>`;
+}
+
+function matchFacts(x) {
+  const words = terms(x.text);
+  const rows = F.filter(f => (!x.person || f.person === x.person) && (x.domain ? f.domain === x.domain : (x.org >= 0 || f.domain !== 'job')) && (!x.kind || f.kind === x.kind) && (x.org < 0 || f.org === x.org) && (!x.from || f.date >= x.from) && (!x.to || f.date <= x.to + '-12-31') && hit(f.text, words));
+  return x.oldest ? rows.slice().reverse() : rows;
+}
+
+function countText(rows, x) {
+  return `${rows.length.toLocaleString()} facts` + (x.org >= 0 ? ` with ${O[x.org].name}` : '') + (x.domain ? '' : '. Pick the job domain to see work calendar events.');
+}
+
+function options(values, picked, all) {
+  return `<option value="">${all}</option>` + values.map(v => `<option${v === picked ? ' selected' : ''}>${esc(v)}</option>`).join('');
+}
+
+function chipRow(key, values, picked, all) {
+  return `<div class="chips">` + [['', all], ...values.map(v => [v, v])].map(([v, label]) => `<button class="btn" data-set="${key}" data-value="${esc(v)}" aria-pressed="${v === picked}">${esc(label)}</button>`).join('') + '</div>';
+}
+
+function factsView() {
+  const x = st.filter, rows = matchFacts(x), words = terms(x.text);
+  const kinds = [...new Set(F.filter(f => (!x.domain || f.domain === x.domain) && (!x.person || f.person === x.person)).map(f => f.kind))].sort();
+  const years = [...new Set(F.map(f => f.date.slice(0, 4)))].sort();
+  return `<div class="filters">${chipRow('person', D.person.filter(Boolean), x.person, 'Everyone')}${chipRow('domain', D.domain, x.domain, 'Every domain')}
+  <div class="row"><select data-pick="kind" aria-label="Kind">${options(kinds, x.kind, 'Every kind')}</select><select data-pick="from" aria-label="From year">${options(years, x.from, 'From')}</select><select data-pick="to" aria-label="To year">${options(years, x.to, 'To')}</select><input data-type="text" value="${esc(x.text)}" placeholder="Words in the fact" aria-label="Words in the fact" style="flex:1;min-width:160px"><button class="btn" data-toggle="oldest" aria-pressed="${x.oldest}">Oldest first</button><button class="btn" data-clear>Clear</button></div></div>
+  <p class="muted" id="count">${countText(rows, x)}</p>
+  <div id="rows">${rows.slice(0, x.shown).map(f => factHtml(f, words)).join('')}</div>${rows.length > x.shown ? `<p><button class="btn" data-more>Show 200 more</button></p>` : ''}`;
+}
+
+function homeView() {
+  const count = key => F.reduce((c, f) => (c[f[key]] = (c[f[key]] || 0) + 1, c), {});
+  const byDomain = count('domain'), byFolder = D.records.reduce((c, r) => (c[r.f] = (c[r.f] || 0) + 1, c), {});
+  const soon = F.filter(f => f.date >= D.built && f.domain !== 'job').reverse().slice(0, 25);
+  return `<h3>People</h3><div class="tiles">${[...FAMILY, 'household'].map(p => `<button class="tile" data-person="${p}"><b>${(count('person')[p] || 0).toLocaleString()}</b>${p}</button>`).join('')}</div>
+  <h3>Facts by domain</h3><div class="tiles">${D.domain.map(d => `<button class="tile" data-domain="${esc(d)}"><b>${byDomain[d].toLocaleString()}</b>${esc(d)}</button>`).join('')}</div>
+  <h3>Records</h3><div class="tiles">${FOLDERS.map(f => `<button class="tile" data-folder="${f}"><b>${byFolder[f]}</b>${f}</button>`).join('')}<button class="tile" data-go="orgs"><b>${O.length.toLocaleString()}</b>organizations</button><button class="tile" data-go="money"><b>${D.ledger.length}</b>payments</button></div>
+  <h3>Coming up from ${D.built}</h3>${soon.map(f => factHtml(f)).join('') || '<p class="muted">Nothing dated after today.</p>'}
+  <p class="muted">${F.length.toLocaleString()} facts, ${D.records.length} records, ${O.length.toLocaleString()} organizations, ${D.docs.length.toLocaleString()} documents. ${D.unread.toLocaleString()} invite and ticket mails are unread and are not facts.</p>`;
+}
+
+function recordHtml(path) {
+  const r = R[path];
+  if (!r) return '<p class="muted">Pick a record.</p>';
+  const facts = r.k.fact_name ? F.filter(f => f.person === r.k.fact_name) : F.filter(f => f.link === path), pays = D.ledger.filter(l => l[1] === r.n);
+  const org = O.find(o => o.record === path);
+  const fields = Object.entries(r.k).filter(([k]) => !['name', 'type'].includes(k)).map(([k, v]) => {
+    const list = [].concat(v).map(x => R[`${k === 'vendor' ? 'vendors' : k}/${x}`] ? `<a data-record="${k === 'vendor' ? 'vendors' : k}/${esc(x)}">${esc(R[`${k === 'vendor' ? 'vendors' : k}/${x}`].n)}</a>` : (x === 'unknown' || x === '' ? '<span class="unk">unknown</span>' : esc(x)));
+    return `<tr><td>${esc(k.replace(/_/g, ' '))}</td><td>${list.join(', ') || '<span class="unk">unknown</span>'}</td></tr>`;
+  }).join('');
+  const linkRow = ([rel, p], back) => R[p] ? `<tr><td>${back ? 'is ' + esc(rel) + ' of' : esc(rel)}</td><td><a data-record="${esc(p)}">${esc(R[p].n)}</a> <span class="muted">${R[p].f}</span></td></tr>` : '';
+  const links = r.to.map(l => linkRow(l, false)).join('') + r.from.map(l => linkRow(l, true)).join('') + (org ? `<tr><td>organization</td><td><a data-org="${org.i}">${esc(org.name)}</a> <span class="muted">${org.n} facts by name</span></td></tr>` : '');
+  return `<div class="card"><h2>${esc(r.n)}</h2><p class="muted"><code>${esc(path)}.md</code></p><table class="kv">${fields}</table></div>
+  <div class="card">${markdown(r.b)}</div>
+  ${links ? `<h3>Links</h3><table class="kv">${links}</table>` : ''}
+  ${r.docs.length ? `<h3>${r.docs.length} documents</h3>${r.docs.map(d => `<div><code>${esc(d)}</code></div>`).join('')}` : ''}
+  ${pays.length ? `<h3>Payments in the ledger</h3><div class="scroll"><table>${pays.map(l => `<tr><td>${l[0]}</td><td>${esc(l[5])}</td><td class="n">${usd(l[4])}</td><td>${esc(l[6])}</td></tr>`).join('')}</table></div>` : ''}
+  ${facts.length ? `<h3>${facts.length.toLocaleString()} dated facts</h3>${facts.slice(0, 200).map(f => factHtml(f)).join('')}${facts.length > 200 && r.k.fact_name ? `<p><button class="btn" data-person="${esc(r.k.fact_name)}">Open all in Facts</button></p>` : ''}` : ''}`;
+}
+
+function recordsView() {
+  const words = terms(st.listText), rows = D.records.filter(r => r.f === st.folder && hit((r.n + ' ' + JSON.stringify(r.k)).toLowerCase(), words));
+  const sub = r => r.k.trade || r.k.model || r.k.kind || r.k.date || r.k.year || '';
+  return `<div class="chips">${FOLDERS.map(f => `<button class="btn" data-folder="${f}" aria-pressed="${f === st.folder}">${f}</button>`).join('')}</div>
+  <div class="cols"><div class="list"><input data-type="listText" value="${esc(st.listText)}" placeholder="Filter ${rows.length} ${st.folder}" aria-label="Filter records" style="width:100%;margin-bottom:6px"><div id="list">${rows.map(r => `<a data-record="${esc(r.p)}">${esc(r.n)} <small>${esc(sub(r) === 'unknown' ? '' : sub(r))}</small></a>`).join('')}</div></div><div>${recordHtml(st.record)}</div></div>`;
+}
+
+function orgHtml(i) {
+  const o = O[i];
+  if (!o) return '<p class="muted">Pick an organization.</p>';
+  const facts = F.filter(f => f.org === i), people = facts.reduce((c, f) => (c[f.person || 'no person'] = (c[f.person || 'no person'] || 0) + 1, c), {});
+  const names = D.org_names[o.id] || [];
+  return `<div class="card"><h2>${esc(o.name)}</h2><p class="muted">${esc(o.kind)} · ${facts.length.toLocaleString()} facts${facts.length ? ` from ${facts[facts.length - 1].date} to ${facts[0].date}` : ''}</p>
+  <div class="chips">${Object.entries(people).sort((a, b) => b[1] - a[1]).map(([p, n]) => `<span class="tag">${esc(p)} ${n}</span>`).join('')}</div>
+  ${o.record && R[o.record] ? `<p>Record: <a data-record="${esc(o.record)}">${esc(R[o.record].n)}</a></p>` : ''}
+  ${names.length > 1 ? `<details><summary>${names.length} spellings in the sources</summary><div class="md"><ul>${names.map(n => `<li>${esc(n)}</li>`).join('')}</ul></div></details>` : ''}</div>
+  <h3>Facts</h3>${facts.slice(0, 150).map(f => factHtml(f)).join('')}${facts.length > 150 ? `<p><button class="btn" data-orgfacts="${i}">Open all ${facts.length.toLocaleString()} in Facts</button></p>` : ''}`;
+}
+
+function orgList() {
+  const words = terms(st.orgText);
+  return O.filter(o => (!st.orgKind || o.kind === st.orgKind) && hit(o.name.toLowerCase(), words)).slice(0, 400).map(o => `<a data-org="${o.i}">${esc(o.name)} <small>${o.n}</small></a>`).join('');
+}
+
+function orgsView() {
+  const kinds = [...new Set(O.map(o => o.kind))].sort();
+  return `<div class="cols"><div class="list"><select data-pick="orgKind" aria-label="Kind" style="width:100%;margin-bottom:6px">${options(kinds, st.orgKind, 'Every kind')}</select><input data-type="orgText" value="${esc(st.orgText)}" placeholder="Filter ${O.length.toLocaleString()} organizations" aria-label="Filter organizations" style="width:100%;margin-bottom:6px"><div id="olist">${orgList()}</div></div><div>${orgHtml(st.org)}</div></div>`;
+}
+
+function moneyView() {
+  const years = [...new Set(D.ledger.map(l => l[0].slice(0, 4)))].sort().reverse();
+  const rows = D.ledger.filter(l => !st.year || l[0].startsWith(st.year));
+  const group = i => Object.entries(rows.reduce((c, l) => (c[l[i]] = (c[l[i]] || 0) + l[4], c), {})).sort((a, b) => b[1] - a[1]);
+  const total = rows.reduce((t, l) => t + l[4], 0);
+  const top = (title, pairs) => `<div class="card"><h3 style="margin-top:0">${title}</h3><table>${pairs.slice(0, 15).map(([k, v]) => `<tr><td>${esc(k)}</td><td class="n">${usd(v)}</td></tr>`).join('')}</table></div>`;
+  return `<div class="row"><select data-pick="year" aria-label="Year">${options(years, st.year, 'Every year')}</select><span class="muted">${rows.length} payments read from mail, ${usd(total)}. The ledger holds only payments that a mail states.</span></div>
+  <div class="cols" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px">${top('By vendor', group(1))}${top('By category', group(2))}</div>
+  <h3>Payments</h3><div class="scroll"><table><tr><th>Date</th><th>Vendor</th><th>Category</th><th>Summary</th><th class="n">Amount</th><th>Source</th></tr>${rows.map(l => `<tr><td>${l[0]}</td><td>${esc(l[1])}</td><td>${esc(l[2])}</td><td>${esc(l[5])}</td><td class="n">${usd(l[4])}</td><td>${esc(l[6])}</td></tr>`).join('')}</table></div>`;
+}
+
+function notesView() {
+  const note = D.notes.find(n => n.p === st.note) || D.notes[0];
+  return `<div class="cols"><div class="list">${D.notes.map(n => `<a data-note="${esc(n.p)}">${esc(n.t)} <small>${esc(n.p)}</small></a>`).join('')}</div><div class="card"><h2>${esc(note.t)}</h2>${markdown(note.b.replace(/^---[\s\S]*?\n---\n/, '').replace(/^# .*\n/m, ''))}</div></div>`;
+}
+
+function searchView() {
+  const words = terms(st.q);
+  if (!words.length) return '';
+  const orgs = O.filter(o => hit(o.name.toLowerCase(), words));
+  const facts = F.filter(f => hit(f.text, words)), records = D.records.filter(r => hit((r.n + ' ' + r.b + ' ' + JSON.stringify(r.k)).toLowerCase(), words));
+  const docs = D.docs.filter(d => hit(d.join(' ').toLowerCase(), words)), notes = D.notes.filter(n => hit((n.t + ' ' + n.b).toLowerCase(), words));
+  return `<h3>${records.length} records</h3><div class="chips">${records.slice(0, 40).map(r => `<a class="btn" data-record="${esc(r.p)}">${esc(r.n)} <small class="muted">${r.f}</small></a>`).join('') || '<span class="muted">None.</span>'}</div>
+  <h3>${orgs.length} organizations</h3><div class="chips">${orgs.slice(0, 40).map(o => `<a class="btn" data-org="${o.i}">${esc(o.name)} <small class="muted">${o.n}</small></a>`).join('') || '<span class="muted">None.</span>'}</div>
+  <h3>${notes.length} notes</h3><div class="chips">${notes.map(n => `<a class="btn" data-note="${esc(n.p)}">${esc(n.t)}</a>`).join('') || '<span class="muted">None.</span>'}</div>
+  <h3>${facts.length.toLocaleString()} facts</h3>${facts.slice(0, 150).map(f => factHtml(f, words)).join('')}${facts.length > 150 ? `<p><button class="btn" data-allfacts>Open all ${facts.length.toLocaleString()} in Facts</button></p>` : ''}
+  <h3>${docs.length} documents</h3>${docs.slice(0, 80).map(d => `<div class="fact"><p>${mark(d[3], words)}</p><div class="meta"><code>${esc(d[0])}</code></div>${d[4] ? `<p class="muted">${mark(d[4], words)}</p>` : ''}</div>`).join('')}`;
+}
+
+function render() {
+  $('nav').innerHTML = VIEWS.map(([v, label]) => `<button class="btn" data-go="${v}" aria-current="${st.view === v && !st.q}">${label}</button>`).join('');
+  const views = {home: homeView, facts: factsView, records: recordsView, orgs: orgsView, money: moneyView, notes: notesView};
+  $('view').innerHTML = st.q ? searchView() : views[st.view]();
+}
+
+function go(view, hash) {
+  st.view = view; st.q = ''; $('q').value = '';
+  try { location.hash = hash || view; } catch (e) {}
+  render(); window.scrollTo(0, 0);
+}
+
+function openFacts(change) { st.filter = {...blank(), ...change}; go('facts'); }
+
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('[data-go],[data-record],[data-org],[data-orgfacts],[data-note],[data-person],[data-domain],[data-folder],[data-set],[data-toggle],[data-clear],[data-more],[data-allfacts]');
+  if (!t) return;
+  const d = t.dataset;
+  if (d.go) go(d.go);
+  else if (d.record) { st.record = d.record; st.folder = R[d.record].f; go('records', 'r-' + d.record.replace('/', '--')); }
+  else if (d.org) { st.org = +d.org; go('orgs', 'o-' + O[st.org].id); }
+  else if (d.orgfacts) openFacts({org: +d.orgfacts});
+  else if (d.note) { st.note = d.note; go('notes'); }
+  else if (d.person) openFacts({person: d.person});
+  else if (d.domain) openFacts({domain: d.domain});
+  else if (d.folder) { st.folder = d.folder; st.record = ''; st.listText = ''; go('records'); }
+  else if (d.set) { st.filter[d.set] = d.value; st.filter.kind = d.set === 'kind' ? d.value : ''; st.filter.shown = 100; render(); }
+  else if (d.toggle) { st.filter[d.toggle] = !st.filter[d.toggle]; render(); }
+  else if ('clear' in d) { st.filter = blank(); render(); }
+  else if ('more' in d) { st.filter.shown += 200; render(); }
+  else if ('allfacts' in d) openFacts({text: st.q});
+});
+
+document.addEventListener('change', ev => {
+  const pick = ev.target.dataset.pick;
+  if (!pick) return;
+  if (pick === 'year') st.year = ev.target.value; else if (pick === 'orgKind') st.orgKind = ev.target.value; else { st.filter[pick] = ev.target.value; st.filter.shown = 100; }
+  render();
+});
+
+let timer;
+document.addEventListener('input', ev => {
+  const t = ev.target, type = t.dataset.type;
+  clearTimeout(timer);
+  timer = setTimeout(() => {
+    if (t.id === 'q') { st.q = t.value.trim(); render(); return; }
+    if (type === 'text') {
+      st.filter.text = t.value; st.filter.shown = 100;
+      const rows = matchFacts(st.filter), words = terms(t.value);
+      $('count').textContent = countText(rows, st.filter);
+      $('rows').innerHTML = rows.slice(0, 100).map(f => factHtml(f, words)).join('');
+    }
+    if (type === 'orgText') { st.orgText = t.value; $('olist').innerHTML = orgList(); }
+    if (type === 'listText') {
+      st.listText = t.value;
+      const words = terms(t.value);
+      $('list').innerHTML = D.records.filter(r => r.f === st.folder && hit((r.n + ' ' + JSON.stringify(r.k)).toLowerCase(), words)).map(r => `<a data-record="${esc(r.p)}">${esc(r.n)}</a>`).join('');
+    }
+  }, 160);
+});
+
+function fromHash() {
+  const h = (location.hash || '').slice(1);
+  if (h.startsWith('r-') && R[h.slice(2).replace('--', '/')]) { st.record = h.slice(2).replace('--', '/'); st.folder = R[st.record].f; st.view = 'records'; }
+  else if (h.startsWith('o-') && OID[h.slice(2)]) { st.org = OID[h.slice(2)].i; st.view = 'orgs'; }
+  else if (VIEWS.some(v => v[0] === h)) st.view = h;
+}
+window.addEventListener('hashchange', () => { fromHash(); render(); });
+fromHash();
+render();
+</script>

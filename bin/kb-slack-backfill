@@ -1,0 +1,20 @@
+#!/bin/zsh
+# Exports the whole Slack history once, then reviews one transcript chunk per task run; reruns resume at the next chunk.
+set -u
+cd "$(dirname "$0")/.."
+bin/kb-guard || exit 1
+if ! ls inbox/slack-backfill/*.md > /dev/null 2>&1 && [ ! -d inbox/slack-backfill/done ]; then
+  python3 -I kb/slack_export.py || exit 1
+  while [ -e .git/index.lock ]; do sleep 10; done
+  git add documents/archive/slack documents/slack-links.csv || exit 1
+  python3 -I kb/secret_scan.py >> /tmp/kb-secret-scan.log 2>&1 && git add -A documents vault facts
+  git commit -q -m "Save every Slack file and catalog every shared Slack link" || exit 1
+  for attempt in 1 2 3; do git pull -q --rebase --autostash origin "${KB_BRANCH:-main}" && git push -q origin "${KB_BRANCH:-main}" && break; sleep 20; done
+fi
+mkdir -p inbox/task-slack
+for chunk in $(ls inbox/slack-backfill/*.md | sort); do
+  rm -f inbox/task-slack/REVIEWED.md inbox/task-slack/*.md
+  cp $chunk inbox/task-slack/chunk.md
+  bin/kb-task-worker slack || exit 1
+  mkdir -p inbox/slack-backfill/done && mv $chunk inbox/slack-backfill/done/
+done
