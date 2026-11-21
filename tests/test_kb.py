@@ -120,6 +120,12 @@ class Graph(unittest.TestCase):
         fact = new_fact(date="2025-01-01", person="household", domain="home", kind="estimate", summary="s", source="file:documents/library/hoa/Oak Hollow Bylaws.pdf")
         self.assertEqual(edit.problems(fact, make_repo()), [])
 
+    def test_a_fact_may_cite_a_note_or_a_reminder(self):
+        repo = make_repo()
+        for source in ("note:p123", "reminder:5A1B", "note:p1 reminder:9C"):
+            self.assertEqual(edit.problems(new_fact(date="2025-01-01", person="household", domain="home", kind="task", summary="s", source=source), repo), [])
+        self.assertNotEqual(edit.problems(new_fact(date="2025-01-01", person="household", domain="home", kind="task", summary="s", source="notes:p1"), repo), [])
+
     def test_record_and_payment_edges_carry_a_relation(self):
         self.assertIn(("vendor", "vendors/acme-roofing"), self.edges("property/roof"))
         self.assertIn(("document", "documents/archive/roof/2023/2023-04-10_acme_warranty.pdf"), self.edges("vendors/acme-roofing"))

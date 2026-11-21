@@ -24,4 +24,4 @@ ENTITY_FOLDERS = {
 }
 
 PRIVATE_FOLDERS = {"vault", "secrets"}
-SOURCE_PREFIXES = ("mail:", "text:", "window:", "calendar:", "file:", "person:", "canvas:", "slack:")
+SOURCE_PREFIXES = ("mail:", "text:", "window:", "calendar:", "file:", "person:", "canvas:", "slack:", "note:", "reminder:")
