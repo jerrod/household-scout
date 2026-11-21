@@ -151,6 +151,11 @@ def ranked(rows):
     return f" ({c['high']} household-likely, {c['low']} under 0.2)"
 
 
+def tag_mail(mail, flags, records):
+    for row in mail:
+        row.update(jev=flags.get(row["id"]), record=records.get(row["id"]))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--commit-state", action="store_true")
@@ -173,11 +178,10 @@ def main():
         texts = triage.tag(texts) if texts else texts
         for row, found in zip(docs, doc_area.triage([{"id": i, "path": d["path"], "ext": os.path.splitext(d["path"])[1], "text": d["text_excerpt"]} for i, d in enumerate(docs)])):
             row.update(area=found["area"], confidence=found["confidence"])
+    tag_mail(mail, flags, records)
     for name, rows in (("mail", mail), ("texts", texts), ("calendar", events), ("documents", docs)):
         with open(inbox / f"{name}.jsonl", "w") as out:
             for r in rows:
-                if name == "mail":
-                    r = {**r, "jev": flags.get(r["id"]), "record": records.get(r["id"])}
                 out.write(json.dumps(r, ensure_ascii=False) + "\n")
     relevant = [r for r in mail if (flags.get(r["id"]) or {}).get("domain") not in (None, "other")]
     digest = [f"# Inbox {day}", "", "| Source | New items |", "| --- | --- |", f"| Mail | {len(mail)} ({len(relevant)} tagged for the household) |", f"| Texts | {len(texts)}{ranked(texts)} |", f"| Calendar events | {len(events)} |", f"| Files in Documents | {len(docs)} |", "", "Next: run the kb-update skill to extract facts, rebuild the records, commit and push."]
