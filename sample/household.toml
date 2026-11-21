@@ -69,3 +69,10 @@ server = "https://kb.example.com"
 [sources.infinite_campus]
 host = "https://example.infinitecampus.org/campus/"
 app_name = "example"
+
+# Mail categories that bin/jev-classify asks Jev to choose from. A name here adds a category or replaces its description. An empty string removes it.
+[mail.domains]
+# pool = "The pool: chemicals, pump, heater, cover and service."
+
+[mail.subtypes]
+# pool = { chemicals = "Chlorine, pH or test supplies.", service = "A pool service visit or repair." }
