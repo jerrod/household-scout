@@ -1,8 +1,8 @@
 from kb import jev
-from kb.household import AREAS
+from kb import areas
 
 HOUSEHOLD = {"household": {"type": "noul", "instructions": "The `message` carries a fact about the family or its plans, such as home, health, school, activities, travel, money, pets or purchases."}}
-CHOICES = {**{name: area.get("about", name) for name, area in AREAS.items()}, "other": "Chatter that fits no area."}
+CHOICES = areas.choices(other="Chatter that fits no area.")
 
 
 def questions():

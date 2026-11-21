@@ -23,20 +23,21 @@ role = "child"
 name = "Biscuit"
 role = "pet"
 
+# Every source sorts items into these areas. `kinds` splits an area further. `vault = true` files the area's attachments in the encrypted vault.
 [areas]
-health = { about = "Medical, dental, vision, pharmacy and therapy.", access = "adults" }
-school = { about = "Classes, grades, assignments, teachers, school events and fees.", access = "everyone" }
+health = { about = "Medical, dental, vision, pharmacy and therapy.", access = "adults", vault = true, kinds = { appointment = "A medical or dental appointment.", bill_claim = "A medical bill or insurance claim.", lab_result = "A lab or test result.", prescription = "A pharmacy or prescription notice.", vaccination_record = "Immunization or vaccination record." } }
+school = { about = "Classes, grades, assignments, teachers, school events and fees.", access = "everyone", kinds = { grades = "Grades, report cards or progress reports.", assignments = "Homework, assignments, projects or tests.", attendance = "Absences, tardies or attendance notices.", teacher_message = "A message from a teacher or counselor.", schedule_calendar = "Class schedule, school calendar or early release.", fees_forms = "Fees, permission slips, registration or forms." } }
 activities = { about = "Sports, camps, lessons, clubs and outings.", access = "everyone" }
 calendar = { about = "A family plan or date that fits no other area.", access = "everyone" }
 travel = { about = "Trips, flights, hotels and rentals.", access = "everyone" }
 dining = { about = "Restaurants, recipes and groceries.", access = "everyone" }
-home = { about = "The house, yard, repairs, contractors, utilities, appliances and vehicles.", access = "everyone" }
+home = { about = "The house, yard, repairs, contractors, utilities, appliances and vehicles.", access = "everyone", kinds = { contractor_work = "Invoice, estimate or appointment from a contractor or trade.", appliance = "Purchase, warranty, manual or service for an appliance.", utilities = "Electric, gas, water, sewer, trash or internet service.", hoa = "Homeowners association dues, rules or requests.", vehicle = "Buying, servicing, registering or insuring a vehicle." } }
 purchases = { about = "Orders, returns and things bought.", access = "adults" }
-finance = { about = "Banks, cards, bills, loans, investments and pay.", access = "adults" }
+finance = { about = "Banks, cards, bills, loans, investments and pay.", access = "adults", vault = true, kinds = { bank_statement = "A bank account statement or alert.", credit_card = "A credit card statement or alert.", loan_mortgage = "A mortgage or loan statement.", investment = "A brokerage or retirement statement.", payroll_benefits = "Pay stubs or employee benefits.", subscription = "A recurring subscription charge." } }
 taxes = { about = "Tax returns, forms and accountants.", access = "adults" }
 insurance = { about = "Policies, coverage, renewals and claims.", access = "adults" }
-legal = { about = "Wills, powers of attorney, guardianship and beneficiaries.", access = "adults" }
-civic = { about = "IDs, voting, jury duty and government notices.", access = "adults" }
+legal = { about = "Wills, powers of attorney, guardianship and beneficiaries.", access = "adults", vault = true }
+civic = { about = "IDs, voting, jury duty and government notices.", access = "adults", vault = true }
 care = { about = "Nannies, sitters, tutors, eldercare and custody schedules.", access = "adults" }
 emergency = { about = "Emergency contacts, shutoffs, medications and plans.", access = "everyone" }
 pets = { about = "Pet care, vets and pet supplies.", access = "everyone" }
@@ -70,9 +71,3 @@ server = "https://kb.example.com"
 host = "https://example.infinitecampus.org/campus/"
 app_name = "example"
 
-# Mail categories that bin/jev-classify asks Jev to choose from. A name here adds a category or replaces its description. An empty string removes it.
-[mail.domains]
-# pool = "The pool: chemicals, pump, heater, cover and service."
-
-[mail.subtypes]
-# pool = { chemicals = "Chlorine, pH or test supplies.", service = "A pool service visit or repair." }
