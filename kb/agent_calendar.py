@@ -92,9 +92,9 @@ def script(events, today):
     return "\n".join(lines)
 
 
-def sync(index=REPO / ".kb/kb.sqlite", state=STATE, run=subprocess.run, digest=None):
+def sync(index=REPO / ".kb/kb.sqlite", state=STATE, run=subprocess.run, digest=None, judge=judged):
     today = datetime.date.today()
-    events = wanted(index, today)
+    events = wanted(index, today, judge=judge)
     if digest:
         events.insert(0, {"id": "digest", "day": today.isoformat(), "time": "07:00", "title": "Household digest", "notes": digest})
     digest = hashlib.sha256(json.dumps([today.isoformat(), events]).encode()).hexdigest()

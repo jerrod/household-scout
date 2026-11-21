@@ -276,10 +276,10 @@ class AgentCalendarTest(unittest.TestCase):
         con.commit()
         calls = []
         state = folder / "state.json"
-        self.assertEqual(1, agent_calendar.sync(index, state, lambda *a, **k: calls.append(k["input"])))
+        self.assertEqual(1, agent_calendar.sync(index, state, lambda *a, **k: calls.append(k["input"]), judge=lambda rows: [False] * len(rows)))
         self.assertIn("Jordan: Due Unit 7.1 Quiz (Math 6 Plus)", calls[0])
         self.assertNotIn("Unit Three Test", calls[0])
-        self.assertEqual(0, agent_calendar.sync(index, state, lambda *a, **k: calls.append(k["input"])))
+        self.assertEqual(0, agent_calendar.sync(index, state, lambda *a, **k: calls.append(k["input"]), judge=lambda rows: [False] * len(rows)))
         self.assertEqual(1, len(calls))
 
     def test_includes_expiry_and_social_dates(self):
