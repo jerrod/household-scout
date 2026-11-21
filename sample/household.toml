@@ -71,3 +71,9 @@ server = "https://kb.example.com"
 host = "https://example.infinitecampus.org/campus/"
 app_name = "example"
 
+
+[sources.notes]
+reader = "apple_notes"
+
+[sources.reminders]
+reader = "apple_reminders"

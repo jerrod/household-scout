@@ -151,6 +151,20 @@ def ranked(rows):
     return f" ({c['high']} household-likely, {c['low']} under 0.2)"
 
 
+def apple_items(name, since, on, run=None, judge=None):
+    import importlib
+    from kb import mask
+    if name not in on:
+        return [], since
+    reader = importlib.import_module(f"kb.sources.{name}")
+    try:
+        rows, until = reader.collect(since, **({"run": run} if run else {}))
+    except Exception as error:
+        print(f"{name}: {error}")
+        return [], since
+    return mask.mask_rows(rows, ("title", "body"), **({"judge": judge} if judge else {})), until
+
+
 def tag_mail(mail, flags, records):
     for row in mail:
         row.update(jev=flags.get(row["id"]), record=records.get(row["id"]))
@@ -245,6 +259,14 @@ def main():
     with open(inbox / "slack.jsonl", "w") as out:
         for row in slack_rows:
             out.write(json.dumps(row, ensure_ascii=False) + "\n")
+    for name, label in (("notes", "Notes"), ("reminders", "Reminders")):
+        rows, state[name] = apple_items(name, state.get(name, ""), on)
+        with open(inbox / f"{name}.jsonl", "w") as out:
+            for row in rows:
+                out.write(json.dumps(row, ensure_ascii=False) + "\n")
+        if rows:
+            digest.insert(-2, f"| {label} | {len(rows)} |")
+    (inbox / "DIGEST.md").write_text("\n".join(digest) + "\n")
     next_state = {**state, "mail_rowid": mail_to, "text_rowid": text_to, "cal_rowid": cal_to, "docs_mtime": docs_to, "canvas": canvas_to, "last_run": day}
     if slack_rows:
         digest.insert(-2, f"| Slack messages | {len(slack_rows)}{ranked(slack_rows)} |")
