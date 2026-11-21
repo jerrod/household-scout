@@ -14,6 +14,7 @@ log() { echo "$(date -Iseconds) $*"; }
 day=$(date +%F)
 host=$(hostname -s)
 pgrep -x Mail > /dev/null || { open -ga Mail; sleep 120; }
+pgrep -x Calendar > /dev/null || { open -ga Calendar; sleep 20; }
 before=$(shasum "$0")
 git pull -q --rebase --autostash origin "${KB_BRANCH:-main}" || { log "pull failed"; exit 1; }
 [ "$(shasum "$0")" = "$before" ] || [ -n "${KB_WORKER_RESTARTED:-}" ] || KB_WORKER_RESTARTED=1 exec "$0"
