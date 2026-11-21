@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""Flag rows that state a specific personal fact. Reads JSONL rows (id, sender, subject, body) on stdin. Writes JSONL rows (id, fact, dated, named_person, specific_value)."""
+import json
+import sys
+import urllib.request
+from pathlib import Path
+
+URL = "https://api.typesafe.ai/v1/systemone"
+KEY_FILE = Path.home() / ".config/typesafe/api-key"
+
+QUESTIONS = {
+    "fact": {"type": "noul", "instructions": "The `message` states a specific fact about one person: a grade, assignment, absence, appointment, provider, diagnosis, lab result, medication, vaccine, schedule, fee or booking."},
+    "dated": {"type": "noul", "instructions": "The `message` gives a specific date or time."},
+    "named_person": {"type": "noul", "instructions": "The `message` names the person the fact is about."},
+    "specific_value": {"type": "noul", "instructions": "The `message` gives a number, score, dose, amount or location."},
+}
+
+
+def classify(row):
+    body = {
+        "state": {"message": f"From: {row['sender']}\nSubject: {row['subject']}\n{row['body'][:900]}\n{row.get('attachments', '')[:600]}"},
+        "model": "jev-latest",
+        "questions": QUESTIONS,
+    }
+    request = urllib.request.Request(
+        URL,
+        data=json.dumps(body).encode(),
+        headers={
+            "Authorization": "Bearer " + KEY_FILE.read_text().strip(),
+            "Content-Type": "application/json",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=60) as response:
+        answers = json.load(response)["answers"]
+    return {"id": row["id"], **{name: answers[name]["noul"] for name in QUESTIONS}}
+
+
+for line in sys.stdin:
+    if line.strip():
+        print(json.dumps(classify(json.loads(line))), flush=True)

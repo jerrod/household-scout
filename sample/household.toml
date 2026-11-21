@@ -42,6 +42,9 @@ emergency = { about = "Emergency contacts, shutoffs, medications and plans.", ac
 pets = { about = "Pet care, vets and pet supplies.", access = "everyone" }
 job = { about = "Paid work: employers, clients, meetings and contracts.", access = "adults" }
 
+[records]
+extra = []
+
 [sources.mail]
 reader = "apple_mail"
 

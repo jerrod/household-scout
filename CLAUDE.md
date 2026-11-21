@@ -50,6 +50,7 @@ Add `--json` before the command name for JSON. Quote a fact with its id and its 
 | `documents/archive/` | Copies of attachments and mail by category and year |
 | `documents/sources.csv`, `summaries.csv`, `fact-links.csv` | Where each document came from, what it says, and which facts it proves |
 | `vault/`, `secrets/` | Identity, medical, finance and license files. git-crypt encrypts both. |
+| `[records] extra` folders | Extra record folders named in `household.toml`, such as `hot-tub`. Each folder's `type` frontmatter equals its folder name. |
 | `kb/`, `bin/`, `tests/` | The library, its commands and its tests |
 | `kb/instructions/` | The reviewer's instructions for each kind of work |
 

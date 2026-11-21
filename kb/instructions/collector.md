@@ -16,7 +16,7 @@ Each row has `id` (the Mail row id on this Mac), `sender`, `subject`, `snippet`,
 
 ## Texts
 
-Rows are single messages. Read them as conversations, grouped by `handle`. Record a fact only when the conversation states one. Save the conversation excerpt that proves it as `documents/archive/texts/<year>/<YYYY-MM-DD>_<handle-slug>.txt`, cite it as `file:<path>`, and list it in `documents/sources.csv` and `documents/summaries.csv`.
+Rows are single messages, each with `jev: {domain, household}`. The file lists high `household` scores first. Read high-score rows closely. Skim rows under 0.2, but still read every row. Read them as conversations, grouped by `handle`. Record a fact only when the conversation states one. Save the conversation excerpt that proves it as `documents/archive/texts/<year>/<YYYY-MM-DD>_<handle-slug>.txt`, cite it as `file:<path>`, and list it in `documents/sources.csv` and `documents/summaries.csv`.
 
 ## Calendar events
 
@@ -50,13 +50,19 @@ Each mail row carries `jev` (domain, subtype, confidence, and health, child and 
 
 `slack.jsonl` holds new messages from the household Slack: `channel` (a channel name, or `DM <person>`), `time` in local time, `from`, `text`, `thread` (the parent message when it is a reply), `files` and `link`.
 
+- Rows carry `jev: {domain, household}` and the highest `household` scores come first. Read high-score rows closely and skim rows under 0.2, but still read every row.
 - Read every message. Add a fact for each date, plan, decision, purchase, appointment, task or anything a parent must act on. Skip chatter and reactions.
 - Use `source: slack:<channel>:<ts>`, the sender's family name as person when the message is about them, and put the `link` in the fact's `link` column only when no record fits.
 - A message that changes an earlier plan updates that plan's fact instead of adding a second one.
 
 ## Files
 
-`documents.jsonl` lists new files in `~/Documents`. Copy each household file into the archive, read it, and record it the same way as a mail attachment.
+`documents.jsonl` lists new files in `~/Documents`. Each row carries `text_excerpt` (the first 4000 characters, empty for images and other types), `area` and `confidence` from Jev. Read every row.
+
+- `area` is `household`: read the whole file, copy it into `documents/` per `CLAUDE.md`, and record it the same way as a mail attachment.
+- `area` is `credential`: move the file into `vault/` and record no secret outside `vault/`.
+- Any other area: open the file when the excerpt hints at a household fact, and count the rest as skipped.
+- `confidence` under 0.7 means open the file whatever the area says.
 
 ## Appointments and events
 
