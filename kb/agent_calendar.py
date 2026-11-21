@@ -6,9 +6,10 @@ import sqlite3
 import subprocess
 import sys
 from pathlib import Path
-from kb import household  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO))
+from kb import household  # noqa: E402
 CALENDAR = "Agent events"
 STATE = household.STATE / "agent-calendar.json"
 QUERY = """select id, coalesce(nullif(due, ''), date) as day, time, person, kind, entity, summary, source from facts
