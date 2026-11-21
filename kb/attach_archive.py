@@ -14,8 +14,12 @@ HOME = Path.home()
 DOCS = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".csv", ".txt", ".rtf", ".pages", ".numbers", ".pptx"}
 IMGS = {".jpg", ".jpeg", ".png", ".heic"}
 JUNK = re.compile(r"^(image\d+|outlook-|logo|spacer|facebook|twitter|linkedin|instagram|pixel|banner|icon|ATT\d+|mailerprovided|ra_\d|IMG_\d+\.PNG$)", re.I)
-KEEP = {"home", "vehicle", "school", "kids", "health", "finance", "legal_id", "pets"}
-SENSITIVE = {"health", "legal_id", "finance"}
+sys.path.insert(0, str(REPO))
+from kb import areas  # noqa: E402
+from kb.household import AREAS  # noqa: E402
+
+KEEP = set(AREAS)
+SENSITIVE = areas.vault()
 MAX_BYTES = 25 * 2**20
 
 

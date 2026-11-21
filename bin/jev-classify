@@ -9,10 +9,10 @@ URL = "https://api.typesafe.ai/v1/systemone"
 KEY_FILE = Path.home() / ".config/typesafe/api-key"
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from kb.mail_domains import domains, subtypes
+from kb import areas
 
-DOMAINS = domains()
-SUBTYPES = subtypes()
+DOMAINS = areas.choices(other="Marketing, newsletters, social media, shopping offers or anything else.")
+SUBTYPES = areas.kinds()
 
 def ask(state, questions):
     body = {"state": state, "model": "jev-latest", "questions": questions}
