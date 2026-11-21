@@ -91,6 +91,17 @@ def audit(con, args):
     emit(args, found, "\n".join(lines) or "no disagreements")
 
 
+def dupes(con, args):
+    from kb import dupes as merge
+    from kb.facts import read_facts
+    found = merge.find(read_facts())
+    lines = [f"{d['keep']} <- {d['drop']}  ({d['score']:.2f})  {d['a'][:70]} | {d['b'][:70]}" for d in found]
+    if args.apply:
+        moved = merge.apply(found)
+        lines.append(f"merged {len(moved)} facts")
+    emit(args, found, "\n".join(lines) or "no duplicates")
+
+
 def stats(con, args):
     print(json.dumps(query.stats(con), indent=1))
 

@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""Flag email rows that record a purchase, job or contract. Reads JSONL rows (id, sender, subject, snippet) on stdin. Writes JSONL rows (id, record, vendor_named, item_named, amount)."""
+import json
+import sys
+import urllib.request
+from pathlib import Path
+
+URL = "https://api.typesafe.ai/v1/systemone"
+KEY_FILE = Path.home() / ".config/typesafe/api-key"
+
+QUESTIONS = {
+    "record": {"type": "noul", "instructions": "The `email` is an order, receipt, invoice, estimate, quote, contract, warranty or service report."},
+    "vendor_named": {"type": "noul", "instructions": "The `email` names the company that sold or did the work."},
+    "item_named": {"type": "noul", "instructions": "The `email` names a specific product, model or piece of work."},
+    "amount": {"type": "noul", "instructions": "The `email` states a dollar amount owed or paid."},
+}
+
+
+def classify(row):
+    body = {
+        "state": {"email": f"From: {row['sender']}\nSubject: {row['subject']}\n{row['snippet']}"},
+        "model": "jev-latest",
+        "questions": QUESTIONS,
+    }
+    request = urllib.request.Request(
+        URL,
+        data=json.dumps(body).encode(),
+        headers={
+            "Authorization": "Bearer " + KEY_FILE.read_text().strip(),
+            "Content-Type": "application/json",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=60) as response:
+        answers = json.load(response)["answers"]
+    return {"id": row["id"], **{name: answers[name]["noul"] for name in QUESTIONS}}
+
+
+for line in sys.stdin:
+    if line.strip():
+        print(json.dumps(classify(json.loads(line))), flush=True)

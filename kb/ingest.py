@@ -119,6 +119,7 @@ def new_events(since):
 
 
 def new_docs(since):
+    from kb.doc_text import excerpt
     out = []
     for base, dirs, files in os.walk(DOCS):
         dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.endswith(".app")]
@@ -130,7 +131,7 @@ def new_docs(since):
                 continue
             if name.startswith(".") or stat.st_mtime <= since:
                 continue
-            out.append({"path": os.path.relpath(full, DOCS), "bytes": stat.st_size})
+            out.append({"path": os.path.relpath(full, DOCS), "bytes": stat.st_size, "text_excerpt": excerpt(full)})
     return out, datetime.datetime.now().timestamp()
 
 
@@ -140,6 +141,14 @@ def classify(rows, script):
     feed = "\n".join(json.dumps({"id": r["id"], "sender": r["sender"], "subject": r["subject"], "snippet": r["snippet"]}) for r in rows)
     result = subprocess.run([sys.executable, "-I", str(REPO / "bin" / script)], input=feed, capture_output=True, text=True)
     return {json.loads(l)["id"]: json.loads(l) for l in result.stdout.splitlines() if l.strip()}
+
+
+def ranked(rows):
+    if not rows or not rows[0].get("jev"):
+        return ""
+    from kb import triage
+    c = triage.counts(rows)
+    return f" ({c['high']} household-likely, {c['low']} under 0.2)"
 
 
 def main():
@@ -159,6 +168,11 @@ def main():
     docs, docs_to = new_docs(state["docs_mtime"]) if "documents" in on else ([], state.get("docs_mtime", 0))
     flags = {} if args.no_jev else classify(mail, "jev-classify")
     records = {} if args.no_jev else classify(mail, "jev-transaction")
+    if not args.no_jev:
+        from kb import doc_area, triage
+        texts = triage.tag(texts) if texts else texts
+        for row, found in zip(docs, doc_area.triage([{"id": i, "path": d["path"], "ext": os.path.splitext(d["path"])[1], "text": d["text_excerpt"]} for i, d in enumerate(docs)])):
+            row.update(area=found["area"], confidence=found["confidence"])
     for name, rows in (("mail", mail), ("texts", texts), ("calendar", events), ("documents", docs)):
         with open(inbox / f"{name}.jsonl", "w") as out:
             for r in rows:
@@ -166,7 +180,7 @@ def main():
                     r = {**r, "jev": flags.get(r["id"]), "record": records.get(r["id"])}
                 out.write(json.dumps(r, ensure_ascii=False) + "\n")
     relevant = [r for r in mail if (flags.get(r["id"]) or {}).get("domain") not in (None, "other")]
-    digest = [f"# Inbox {day}", "", "| Source | New items |", "| --- | --- |", f"| Mail | {len(mail)} ({len(relevant)} tagged for the household) |", f"| Texts | {len(texts)} |", f"| Calendar events | {len(events)} |", f"| Files in Documents | {len(docs)} |", "", "Next: run the kb-update skill to extract facts, rebuild the records, commit and push."]
+    digest = [f"# Inbox {day}", "", "| Source | New items |", "| --- | --- |", f"| Mail | {len(mail)} ({len(relevant)} tagged for the household) |", f"| Texts | {len(texts)}{ranked(texts)} |", f"| Calendar events | {len(events)} |", f"| Files in Documents | {len(docs)} |", "", "Next: run the kb-update skill to extract facts, rebuild the records, commit and push."]
     (inbox / "DIGEST.md").write_text("\n".join(digest) + "\n")
     print("\n".join(digest))
     from kb.sources.mail import save_mail
@@ -221,10 +235,16 @@ def main():
             slack_rows, state["slack"] = slack.collect(state.get("slack", {}))
         except Exception as error:
             print(f"slack: {error}")
+    if slack_rows and not args.no_jev:
+        from kb import triage
+        slack_rows = triage.tag(slack_rows)
     with open(inbox / "slack.jsonl", "w") as out:
         for row in slack_rows:
             out.write(json.dumps(row, ensure_ascii=False) + "\n")
     next_state = {**state, "mail_rowid": mail_to, "text_rowid": text_to, "cal_rowid": cal_to, "docs_mtime": docs_to, "canvas": canvas_to, "last_run": day}
+    if slack_rows:
+        digest.insert(-2, f"| Slack messages | {len(slack_rows)}{ranked(slack_rows)} |")
+        (inbox / "DIGEST.md").write_text("\n".join(digest) + "\n")
     (inbox / "next-state.json").write_text(json.dumps(next_state, indent=2) + "\n")
     if args.commit_state:
         state.update({"mail_rowid": mail_to, "text_rowid": text_to, "cal_rowid": cal_to, "docs_mtime": docs_to, "last_run": day})

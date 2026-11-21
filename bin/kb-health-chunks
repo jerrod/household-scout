@@ -1,0 +1,16 @@
+#!/bin/zsh
+# Feeds the health review 30 files at a time from the vault, one task run per chunk.
+set -u
+cd "$(dirname "$0")/.."
+bin/kb-guard || exit 1
+all=$(mktemp)
+find vault/archive/health vault/archive/medical vault/archive/insurance documents/archive/pets -type f ! -name '*.txt' 2>/dev/null | sort > $all
+rm -f /tmp/kb-health-chunk-*
+split -l 30 $all /tmp/kb-health-chunk-
+for chunk in /tmp/kb-health-chunk-*; do
+  mkdir -p inbox/task-health
+  rm -f inbox/task-health/REVIEWED.md
+  cp $chunk inbox/task-health/files.txt
+  bin/kb-task-worker health || exit 1
+  rm $chunk
+done

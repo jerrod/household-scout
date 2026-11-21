@@ -1,0 +1,4 @@
+#!/bin/zsh
+# Collect new mail, texts, calendar events and Documents files into inbox/<date>/.
+# Pass --commit-state to move the watermarks forward. Then run the kb-update skill in Claude Code.
+cd "$(dirname "$0")/.." && exec python3 -I kb/ingest.py "$@"

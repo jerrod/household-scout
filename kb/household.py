@@ -23,6 +23,7 @@ PETS = [p["name"] for p in PEOPLE if p.get("role") == "pet"]
 KIDS = [p["name"] for p in PEOPLE if p.get("role") == "child"]
 AREAS = CONFIG.get("areas", {})
 SOURCES = CONFIG.get("sources", {})
+RECORDS_EXTRA = CONFIG.get("records", {}).get("extra", [])
 
 
 def source(name):

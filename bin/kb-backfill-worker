@@ -1,0 +1,35 @@
+#!/bin/zsh
+# Reviews every chunk under inbox/backfill-<name>/ one at a time, then checks, commits and pushes each chunk.
+set -u
+cd "$(dirname "$0")/.."
+bin/kb-guard || exit 1
+name=$1
+log() { echo "$(date -Iseconds) $*" | tee -a /tmp/kb-backfill-$name.log; }
+for chunk in inbox/backfill-$name/*(/); do
+  [ -f $chunk/REVIEWED.md ] && continue
+  until mkdir /tmp/kb-worker.lock 2>/dev/null; do
+    owner=$(cat /tmp/kb-worker.lock/pid 2>/dev/null)
+    [ -n "$owner" ] && ! kill -0 $owner 2>/dev/null && rm -rf /tmp/kb-worker.lock && continue
+    sleep 60
+  done
+  echo $$ > /tmp/kb-worker.lock/pid
+  trap 'rm -rf /tmp/kb-worker.lock 2>/dev/null' EXIT
+  git pull -q --rebase --autostash origin "${KB_BRANCH:-main}" || { log "pull failed"; exit 1; }
+  log "reviewing $chunk"
+  claude -p "Follow kb/instructions/collector.md for $chunk/ instead of inbox/<date>/. It holds only mail from one backfilled account; work out which person it belongs to from the mail. Read every row. Run one simple command per Bash call from the repository root, and read files with the Read tool. Write the report to $chunk/REVIEWED.md." \
+    --model sonnet --permission-mode acceptEdits \
+    --allowedTools "Read" "Write" "Edit" "Glob" "Grep" "Bash(bin/kb *)" "Bash(cd *)" "Bash(echo *)" "Bash(awk *)" "Bash(tr *)" "Bash(md5 *)" "Bash(shasum *)" "Bash(sed *)" "Bash(find *)" "Bash(xargs *)" "Bash(for *)" "Bash(printf *)" "Bash(head *)" "Bash(tail *)" "Bash(grep *)" "Bash(wc *)" "Bash(sort *)" "Bash(uniq *)" "Bash(cut *)" "Bash(cat *)" "Bash(file *)" "Bash(bin/test)" "Bash(bin/test *)" "Bash(git status *)" "Bash(git diff *)" "Bash(pdftotext *)" "Bash(python3 *)" "Bash(mv *)" "Bash(cp *)" "Bash(mkdir *)" "Bash(ls *)" \
+    < /dev/null > /tmp/kb-backfill-$name-review.txt 2>&1
+  [ -f $chunk/REVIEWED.md ] || { log "review incomplete for $chunk: see /tmp/kb-backfill-$name-review.txt"; git checkout -q -- .; git clean -qfd -- documents vault facts; exit 1; }
+  bin/kb check > /tmp/kb-backfill-check.txt 2>&1 || { log "check failed for $chunk"; exit 1; }
+  bin/test > /tmp/kb-backfill-test.txt 2>&1 || { log "tests failed for $chunk"; exit 1; }
+  git add -A -- . ':!secrets'
+  git commit -q -F - <<MSG || log "nothing to commit for $chunk"
+Read backfilled $name mail, $(basename $chunk)
+
+$(cat $chunk/REVIEWED.md)
+MSG
+  git push -q origin "${KB_BRANCH:-main}" && log "pushed $(git rev-parse --short HEAD) for $chunk"
+  rm -rf /tmp/kb-worker.lock
+done
+log "backfill $name finished"

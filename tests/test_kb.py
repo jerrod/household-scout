@@ -117,7 +117,7 @@ class Graph(unittest.TestCase):
         self.assertEqual(check.run(self.con)["fact link names a missing document or fact"], [])
 
     def test_a_fact_may_name_a_file_with_spaces_as_its_source(self):
-        fact = new_fact(date="2025-01-01", person="household", domain="home", kind="estimate", summary="s", source="file:documents/library/hoa/Falls Pointe Bylaws.pdf")
+        fact = new_fact(date="2025-01-01", person="household", domain="home", kind="estimate", summary="s", source="file:documents/library/hoa/Oak Hollow Bylaws.pdf")
         self.assertEqual(edit.problems(fact, make_repo()), [])
 
     def test_record_and_payment_edges_carry_a_relation(self):
@@ -463,3 +463,82 @@ class RecurringTest(unittest.TestCase):
         self.assertEqual({"F2": "F1"}, merged)
         self.assertEqual("mail:1 mail:2", kept[0]["source"])
         self.assertEqual("score 9", kept[1]["value"])
+
+
+class TriageTest(unittest.TestCase):
+    def test_tags_and_sorts_household_first(self):
+        from kb import triage
+        rows = [{"id": 1, "text": "lol", "handle": "+1"}, {"id": 2, "text": "dentist friday", "handle": "+2"}]
+
+        def ask(states):
+            return [{"domain": {"choice": "health" if "dentist" in s["message"] else "other", "confidence": 1}, "household": {"noul": 0.9 if "dentist" in s["message"] else 0.05}} for s in states]
+
+        found = triage.tag(rows, ask)
+        self.assertEqual([2, 1], [r["id"] for r in found])
+        self.assertEqual({"domain": "health", "household": 0.9}, found[0]["jev"])
+        self.assertEqual({"high": 1, "low": 1, "total": 2}, triage.counts(found))
+
+
+class DocTest(unittest.TestCase):
+    def test_excerpt_by_type(self):
+        import tempfile
+        from kb import doc_text
+        folder = Path(tempfile.mkdtemp())
+        (folder / "a.html").write_text("<style>x{}</style><p>Roof&amp;gutter</p>" + "y" * 5000)
+        (folder / "b.bin").write_bytes(b"\x00")
+        (folder / "c.pdf").write_bytes(b"%PDF")
+        self.assertEqual(4000, len(doc_text.excerpt(folder / "a.html")))
+        self.assertTrue(doc_text.excerpt(folder / "a.html").startswith("Roof&gutter"))
+        self.assertEqual("", doc_text.excerpt(folder / "b.bin"))
+        ran = []
+        run = lambda cmd, **k: ran.append(cmd) or type("R", (), {"stdout": " lease  text "})()
+        self.assertEqual("lease text", doc_text.excerpt(folder / "c.pdf", run=run))
+        self.assertEqual("pdftotext", ran[0][0])
+
+    def test_triage_maps_answers(self):
+        from kb import doc_area
+        found = doc_area.triage([{"id": 7, "path": "a.txt", "ext": ".txt", "text": "w2"}], lambda states: [{"area": {"choice": "household", "confidence": 0.9}}])
+        self.assertEqual([{"id": 7, "area": "household", "confidence": 0.9}], found)
+        self.assertEqual([], doc_area.triage([]))
+
+
+class DupesTest(unittest.TestCase):
+    def facts(self):
+        base = {"date": "2026-01-01", "person": "Riley", "domain": "health", "kind": "visit", "entity": "Dr Lee", "time": "", "value": "", "amount": "", "due": "", "contact": "", "link": ""}
+        return [{**base, "id": "F000002", "summary": "Dentist visit", "source": "mail:2 file:x", "contact": "555"},
+                {**base, "id": "F000001", "summary": "Dentist visit cleaning", "source": "mail:1 file:x", "link": "vendors/a"},
+                {**base, "id": "F000003", "summary": "Soccer", "entity": "Club", "kind": "game", "source": "mail:3"}]
+
+    def test_finds_and_applies(self):
+        from kb import dupes
+        from kb.facts import write_facts
+        facts = self.facts()
+        self.assertEqual(1, len(dupes.candidates(facts)))
+        found = dupes.find(facts, lambda states: [{"noul": {"noul": 0.95}} for _ in states])
+        self.assertEqual([("F000001", "F000002")], [(d["keep"], d["drop"]) for d in found])
+        self.assertEqual([], dupes.find(facts, lambda states: [{"noul": {"noul": 0.5}} for _ in states]))
+        import tempfile
+        root = Path(tempfile.mkdtemp())
+        (root / "documents").mkdir()
+        (root / "documents/fact-links.csv").write_text("fact,path\nF000001,p.pdf\nF000002,p.pdf\nF000002,q.pdf\n")
+        (root / "notes.md").write_text("see F000002 and F000003\n")
+        write_facts(facts, root / "facts")
+        dupes.apply(found, root)
+        left = read_facts(root / "facts")
+        self.assertEqual(["F000001", "F000003"], [f["id"] for f in left])
+        self.assertEqual("mail:1 file:x mail:2", left[0]["source"])
+        self.assertEqual("555", left[0]["contact"])
+        self.assertEqual("vendors/a", left[0]["link"])
+        self.assertEqual("fact,path\nF000001,p.pdf\nF000001,q.pdf\n", (root / "documents/fact-links.csv").read_text())
+        self.assertEqual("see F000001 and F000003\n", (root / "notes.md").read_text())
+
+
+class RecordFoldersTest(unittest.TestCase):
+    def test_extra_record_folders_come_from_the_config(self):
+        import os, subprocess, sys, tempfile
+        folder = Path(tempfile.mkdtemp())
+        (folder / "household.toml").write_text('[household]\nname = "Test"\n[records]\nextra = ["hot-tub", "gear"]\n')
+        code = "from kb.schema import ENTITY_FOLDERS as E; print(E['hot-tub'], E['gear'], E['vendors'])"
+        env = {**os.environ, "HOUSEHOLD_CONFIG": str(folder / "household.toml"), "HOME": str(folder)}
+        out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, env=env, cwd=Path(__file__).resolve().parent.parent)
+        self.assertEqual("hot-tub gear vendor", out.stdout.strip(), out.stderr)

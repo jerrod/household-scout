@@ -1,0 +1,10 @@
+#!/bin/zsh
+# Builds the card map, then names the paying card on each month's payment facts, one task run per month.
+set -u
+cd "$(dirname "$0")/.."
+bin/kb-guard || exit 1
+year=${1:-$(date +%Y)}
+bin/kb-task-worker cards || exit 1
+for month in 01 02 03 04 05 06 07 08 09 10 11 12; do
+  bin/kb-task-worker payments "select id, source from facts where date like '$year-$month-%' and kind in ('bill','statement','invoice','autopay','payment','receipt','subscription','order','purchase')" || exit 1
+done
