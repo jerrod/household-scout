@@ -49,6 +49,8 @@ def merged(keep, drop):
     for column in FACT_COLUMNS:
         if not row[column]:
             row[column] = drop[column]
+    if len(drop["summary"]) > len(keep["summary"]):
+        row["summary"] = drop["summary"]
     return row
 
 

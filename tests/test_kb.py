@@ -505,8 +505,8 @@ class DocTest(unittest.TestCase):
 class DupesTest(unittest.TestCase):
     def facts(self):
         base = {"date": "2026-01-01", "person": "Riley", "domain": "health", "kind": "visit", "entity": "Dr Lee", "time": "", "value": "", "amount": "", "due": "", "contact": "", "link": ""}
-        return [{**base, "id": "F000002", "summary": "Dentist visit", "source": "mail:2 file:x", "contact": "555"},
-                {**base, "id": "F000001", "summary": "Dentist visit cleaning", "source": "mail:1 file:x", "link": "vendors/a"},
+        return [{**base, "id": "F000002", "summary": "Dentist visit cleaning", "source": "mail:2 file:x", "contact": "555"},
+                {**base, "id": "F000001", "summary": "Dentist visit", "source": "mail:1 file:x", "link": "vendors/a"},
                 {**base, "id": "F000003", "summary": "Soccer", "entity": "Club", "kind": "game", "source": "mail:3"}]
 
     def test_finds_and_applies(self):
@@ -528,6 +528,7 @@ class DupesTest(unittest.TestCase):
         self.assertEqual(["F000001", "F000003"], [f["id"] for f in left])
         self.assertEqual("mail:1 file:x mail:2", left[0]["source"])
         self.assertEqual("555", left[0]["contact"])
+        self.assertEqual("Dentist visit cleaning", left[0]["summary"])
         self.assertEqual("vendors/a", left[0]["link"])
         self.assertEqual("fact,path\nF000001,p.pdf\nF000001,q.pdf\n", (root / "documents/fact-links.csv").read_text())
         self.assertEqual("see F000001 and F000003\n", (root / "notes.md").read_text())
