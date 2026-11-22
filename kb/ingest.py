@@ -151,14 +151,14 @@ def ranked(rows):
     return f" ({c['high']} household-likely, {c['low']} under 0.2)"
 
 
-def apple_items(name, since, on, run=None, judge=None):
+def apple_items(name, since, on, where=None, judge=None):
     import importlib
     from kb import mask
     if name not in on:
         return [], since
     reader = importlib.import_module(f"kb.sources.{name}")
     try:
-        rows, until = reader.collect(since, **({"run": run} if run else {}))
+        rows, until = reader.collect(since, *([where] if where else []))
     except Exception as error:
         print(f"{name}: {error}")
         return [], since
